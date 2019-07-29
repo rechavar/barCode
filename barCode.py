@@ -6,9 +6,12 @@
 
 import requests as rq 
 import time
-#import RPi.GPIO as GPIO #Se usara una Raspberry 
+from zeep import Client as clt
+##import RPi.GPIO as GPIO #Se usara una Raspberry 
 
-URL =  'http://erm.expertoseguridad.com.co/wsCai/wsControlExterno.asmx?op=ControlaccesoAutomatizado'
+URL1 = 'http://erm.expertoseguridad.com.co/wsCai/wsControlExterno.asmx?WSDL'
+TOKEN = '800010866'
+CLIENT = clt(URL1)
 TIEMPO_ESPERA = 10000
 
 while True: #El programa corre de forma indefinida
@@ -29,12 +32,9 @@ while True: #El programa corre de forma indefinida
             break
         
 
-    PARAMS = {'Token': '800010866',
-              'Identificacion': numeroCedula,
-              'lector': '2'}
+    respuestaServidor = CLIENT.service.ControlaccesoAutomatizado(TOKEN,'{}'.format(numeroCedula),'2')
+    print(respuestaServidor)
 
-    respuestaServidor = rq.get(url = URL, params= PARAMS)
-    print(respuestaServidor.text)
 
 """
     timeIn = time.time()
@@ -46,7 +46,7 @@ while True: #El programa corre de forma indefinida
             timeOut = time.time()
         GPIO.output(12, GPIO.LOW)
 
-    elif respuestaServidor[0] = '1' and respuestaServidor[1] = '2':
+    elif respuestaServidor[0] == '1' and respuestaServidor[1] == '2':
 
         GPIO.output(13, GPIO.HIGH)
         while timeIn - timeOut <= TIEMPO_ESPERA:
