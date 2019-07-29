@@ -6,7 +6,7 @@
 
 import requests as rq 
 import time
-import RPi.GPIO as GPIO #Se usara una Raspberry 
+#import RPi.GPIO as GPIO #Se usara una Raspberry 
 
 URL =  'http://erm.expertoseguridad.com.co/wsCai/wsControlExterno.asmx?op=ControlaccesoAutomatizado'
 TIEMPO_ESPERA = 10000
@@ -19,7 +19,7 @@ while True: #El programa corre de forma indefinida
         text.append(i)
     i = 0 
     char = text[i]
-    numerocedula = ''
+    numeroCedula = ''
     while not char.isalpha():
         try:
             numeroCedula = numeroCedula + '{}'.format(char)
@@ -34,7 +34,9 @@ while True: #El programa corre de forma indefinida
               'lector': '2'}
 
     respuestaServidor = rq.get(url = URL, params= PARAMS)
+    print(respuestaServidor.text)
 
+"""
     timeIn = time.time()
     timeOut = time.time()
     if respuestaServidor[0] == '1' and respuestaServidor[1] == '1':
@@ -54,6 +56,6 @@ while True: #El programa corre de forma indefinida
     else:
         pass
 
-
+"""
 
     
