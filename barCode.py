@@ -5,12 +5,22 @@
  
 import time
 from zeep import Client as clt
-##import RPi.GPIO as GPIO #Se usara una Raspberry 
+import RPi.GPIO as GPIO #Se usara una Raspberry 
 
 URL1 = 'http://erm.expertoseguridad.com.co/wsCai/wsControlExterno.asmx?WSDL'
 TOKEN = '800010866'
 CLIENT = clt(URL1)
 TIEMPO_ESPERA = 5000
+
+##GPIO config 12, 13, 6
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(12,GPIO.OUT)
+
+GPIO.setup(13,GPIO.OUT)
+GPIO.setup(6,GPIO.IN)
+
+
 
 while True: #El programa corre de forma indefinida
     try:
@@ -19,7 +29,8 @@ while True: #El programa corre de forma indefinida
         barcode = barcode.split()
         localTime = time.localtime()
         if len(barcode) > 1:
-            nombreCedula = str(barcode[1] +' '+ barcode[2] +' '+ barcode[3])
+            apellidoCedula = str(barcode[1] +' '+ barcode[2]) 
+            nombreCedula = str(barcode[3])
             if len(barcode[4]) > 1:
                 nombreCedula = nombreCedula +' '+ str(barcode[4])
         numeroCedula = barcode[0]                 
@@ -28,29 +39,45 @@ while True: #El programa corre de forma indefinida
 
         print('La persona {} con cedula {} ingreso el {} a las {}'.format(nombreCedula,numeroCedula,fecha,hora))
         print('--------------------------------------------------')
-        respuestaServidor = CLIENT.service.ControlaccesoAutomatizado(TOKEN,'{}'.format(numeroCedula),'2')
-        print('La persona tiene autorizacion? \n{}'.format(respuestaServidor))
+        respuestaServidor = CLIENT.service.Select_ControlaccesoAutomatizado(TOKEN,numeroCedula,'{} - {}'.format(fecha,hora))
 
-    """
-        timeIn = time.time()
-        timeOut = time.time()
-        if respuestaServidor[0] == '1' and respuestaServidor[1] == '1':
+        waitTime1 = time.time()
+        waitTime2 = time.time()
 
+        if respuestaServidor == '1':
             GPIO.output(12,GPIO.HIGH)
-            while timeIn - timeOut <= TIEMPO_ESPERA:
-                timeOut = time.time()
-            GPIO.output(12, GPIO.LOW)
+            while waitTime2-waitTime1 <= TIEMPO_ESPERA:
+                waitTime2 = time.time()
+                if waitTime2 - waitTime1 > TIEMPO_ESPERA:
+                    print('Ha superado el tiempo de espera')
+                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, numeroCedula, nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '0')
 
-        elif respuestaServidor[0] == '1' and respuestaServidor[1] == '2':
+                if GPIO.input(6) == True:
+                    print('El usuario a salido o ingresado')
+                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, numeroCedula, nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '1')
+                    brea
+            GPIO.output(12,GPIO.LOW)   
 
-            GPIO.output(13, GPIO.HIGH)
-            while timeIn - timeOut <= TIEMPO_ESPERA:
-                timeOut = time.time()
-            GPIO.output(13, GPIO.LOW)
+        elif  respuestaServidor == '2': 
+            GPIO.output(13,GPIO.HIGH)
+            while waitTime2-waitTime1 <= TIEMPO_ESPERA:
+                waitTime2 = time.time()
+                if waitTime2 - waitTime1 > TIEMPO_ESPERA:
+                    print('Ha superado el tiempo de espera')
+                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, numeroCedula, nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '0')
 
-        else:
-            pass
-"""
+                if GPIO.input(6) == True:
+                    print('El usuario a salido o ingresado')
+                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, numeroCedula, nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '1')
+                    break 
+
+            GPIO.output(13,GPIO.LOW)
+
+
+            print(estadoUsuario)
+
+        if respuestaServidor == '0':
+            print('El usuario {} No tiene permiso para ingresar y/o salir'.format(numeroCedula))
     except:
         pass
 
