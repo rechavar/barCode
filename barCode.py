@@ -16,7 +16,6 @@ TIEMPO_ESPERA = 5000
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(12,GPIO.OUT)
-
 GPIO.setup(13,GPIO.OUT)
 GPIO.setup(6,GPIO.IN)
 
@@ -64,7 +63,7 @@ while True: #El programa corre de forma indefinida
                 waitTime2 = time.time()
                 if waitTime2 - waitTime1 > TIEMPO_ESPERA:
                     print('Ha superado el tiempo de espera')
-                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, numeroCedula, nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '0')
+                    estadoUsuario = CLIENT.service.Insert_ControlaccesoAutomatizado(TOKEN, , nombreCedula, apellidoCedula, '{} - {}'.format(fecha,hora), '0')
 
                 if GPIO.input(6) == True:
                     print('El usuario a salido o ingresado')
