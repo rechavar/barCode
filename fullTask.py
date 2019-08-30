@@ -89,11 +89,28 @@ def main():
     
 
     while True:
+        
         barCode = input('acerque la cedula al lector')
+        
+        """
+        numberID = ''
+        i = 0
+        while barCode[i].isdigit():
+            numberID = numberID + barCode[i]
+            i += 1
+        
+        nameID = ''
+        while barCode[i].isalpha():
+            nameID = nameID + barCode[i]
+            i += 1
+        nameID = nameID[:-1]
+        lastNameID = nameID[:-1]
+        """
         barCode = barCode.split()
         numberID = barCode[0]
         lastNameID = barCode[1] + '' + barCode[2]
         nameID = barCode[3]
+       
 
         localTime = time.localtime()
         date = '{}/{}/{}'.format(localTime.tm_year, localTime.tm_mon, localTime.tm_mday)
