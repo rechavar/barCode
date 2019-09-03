@@ -4,19 +4,36 @@ from collections import defaultdict
 import os
 import json
 from zeep import Client as clt 
+import RPi.GPIO as GPIO
 
 
 URL = 'http://erm.expertoseguridad.com.co/wsCai/wsControlExterno.asmx?WSDL'
 TOKEN = '800010866'
-TIEMPO_ESPERA = 30000
+TIEMPO_ESPERA = 5
 estadoConexion = False
 data = {}
 data['visitantes'] = []
 offlinetime1 = 0.0
 offlinetime2 = 0.0
 
+##GPIO config 12, 13, 6
 
-def offline_function(numberID,lastNameID,nameID,date,hour, action = False, entry = False):
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(12,GPIO.OUT)
+GPIO.setup(13,GPIO.OUT)
+
+def controlApertura(port):
+    global TIEMPO_ESPERA
+    GPIO.output(port,GPIO.HIGH)
+    waitTime1 = time.time()
+    waitTime2 = time.time()
+    while waitTime2 - waitTime1 < TIEMPO_ESPERA:
+        waitTime2 = time.time()
+    GPIO.output(port,GPIO.LOW)
+
+
+
+def offline_function(numberID,lastNameID,nameID,date,hour, sentido, action = False ):
 
     data['visitantes'] = {
         'name' : nameID,
@@ -30,12 +47,13 @@ def offline_function(numberID,lastNameID,nameID,date,hour, action = False, entry
     jsonFile.close()
 
     if action:
-        if entry:
+        if sentido == 'A':
             print('permitir entrada')
-        else:
+            #controlApertura(12)
+        elif sentido == 'B':
             print('permitir salida')
-
-def online_function(numberID, lastNameID, nameID, date, hour, client):
+            #controlApertura(13)
+def online_function(numberID, lastNameID, nameID, date, hour, client,sentido):
     global estadoConexion
     global offlinetime1
 
@@ -43,19 +61,18 @@ def online_function(numberID, lastNameID, nameID, date, hour, client):
         serverResponse = client.service.Select_ControlaccesoAutomatizado(TOKEN,numberID,'{}'.format(date))
         if serverResponse == '0':
             print('No permitir ingreso/salida')
-        elif serverResponse == '1':
+        elif sentido == 'A':
             print('Permitir ingreso')
-        elif serverResponse == '2':
-            print('Permitir salida')
+            #controlApertura(12)
+        elif sentido == 'B':
+            print('Permitir salida')                                        
+            #controlApertura(13)
     
     except requests.exceptions.ConnectionError:
         estadoConexion = False
         offlinetime1 = time.time()
-        x = input('la persona esta entrando? [y/n]')
-        if x == 'y':
-            offline_function(numberID,lastNameID,nameID,date,hour, action= True, entry= True)
-        else:
-            offline_function(numberID,lastNameID,nameID,date,hour, action= True, entry= False)
+        offline_function(numberID,lastNameID,nameID,date,hour, sentido, action= True)
+        
         
 
     try:
@@ -64,12 +81,12 @@ def online_function(numberID, lastNameID, nameID, date, hour, client):
         print(estadoConexion)
         while respuestaServidor == False and estadoConexion == True:
             respuestaServidor = client.service.Insert_ControlaccesoAutomatizado(TOKEN, numberID, nameID, lastNameID, '{}'.format(date), serverResponse)
-            print('respuesta del servidor {}'.format(serverResponse))
+            print('respuesta del servidor {}'.format(respuestaServidor))
 
     except requests.exceptions.ConnectionError:
         offlinetime1 = time.time()
         estadoConexion = False
-        offline_function(numberID,lastNameID,nameID,date,hour)
+        offline_function(numberID,lastNameID,nameID,date,hour, sentido,action= False)
 
 
 
@@ -106,6 +123,8 @@ def main():
         nameID = nameID[:-1]
         lastNameID = nameID[:-1]
         """
+        sentido = barCode[0]
+        barCode = barCode[2:]
         barCode = barCode.split()
         numberID = barCode[0]
         lastNameID = barCode[1] + '' + barCode[2]
@@ -117,14 +136,10 @@ def main():
         hour = '{}:{}:{}'.format(localTime.tm_hour, localTime.tm_min, localTime.tm_sec)
 
         if estadoConexion:
-            online_function(numberID, lastNameID, nameID, date, hour, client)
+            online_function(numberID, lastNameID, nameID, date, hour, client, sentido)
         else:
-            x = input('la persona esta entrando? [y/n]')
-            if x == 'y':
-                offline_function(numberID,lastNameID,nameID,date,hour, action= True, entry= True)
-            else:
-                offline_function(numberID,lastNameID,nameID,date,hour, action= True, entry= False)
-
+            
+            offline_function(numberID,lastNameID,nameID,date,hour, sentido, action= True)
             offlinetime2 = time.time()
 
             if offlinetime2 - offlinetime1 > 10 and estadoConexion == False:
